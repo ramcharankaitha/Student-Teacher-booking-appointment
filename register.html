@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Student Teacher Booking</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card" style="max-width: 520px;">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+            </div>
+            <h1>Create Account</h1>
+            <p class="subtitle">Register as a Student or Teacher to get started</p>
+
+            <div id="alertBox" class="alert"></div>
+
+            <div class="role-selector">
+                <button class="role-btn active" onclick="selectRegRole('student')">Student</button>
+                <button class="role-btn" onclick="selectRegRole('teacher')">Teacher</button>
+            </div>
+
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <input type="hidden" id="regRole" value="student">
+
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" placeholder="Create a password (min 6 chars)" required minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" placeholder="Confirm your password" required minlength="6">
+                </div>
+
+                <!-- Student Fields -->
+                <div id="studentFields">
+                    <div class="form-group">
+                        <label for="studentId">Student ID</label>
+                        <input type="text" id="studentId" placeholder="Enter your student ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="course">Course</label>
+                        <input type="text" id="course" placeholder="e.g., B.Tech, BCA, MCA">
+                    </div>
+                    <div class="form-group">
+                        <label for="semester">Semester</label>
+                        <select id="semester">
+                            <option value="">Select Semester</option>
+                            <option value="1">1st Semester</option>
+                            <option value="2">2nd Semester</option>
+                            <option value="3">3rd Semester</option>
+                            <option value="4">4th Semester</option>
+                            <option value="5">5th Semester</option>
+                            <option value="6">6th Semester</option>
+                            <option value="7">7th Semester</option>
+                            <option value="8">8th Semester</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Teacher Fields -->
+                <div id="teacherFields" class="hidden">
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <input type="text" id="department" placeholder="e.g., Computer Science">
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" placeholder="e.g., Data Structures">
+                    </div>
+                    <div class="form-group">
+                        <label for="qualification">Qualification</label>
+                        <input type="text" id="qualification" placeholder="e.g., M.Tech, PhD">
+                    </div>
+                    <div class="form-group">
+                        <label for="experience">Experience (Years)</label>
+                        <input type="number" id="experience" placeholder="Years of experience" min="0">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="registerBtn">Register</button>
+            </form>
+
+            <div class="auth-link">
+                <p>Already have an account? <a href="index.html">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        // Role selection for registration
+        function selectRegRole(role) {
+            document.getElementById("regRole").value = role;
+            document.querySelectorAll(".role-btn").forEach(btn => btn.classList.remove("active"));
+            event.target.classList.add("active");
+
+            // Toggle fields
+            document.getElementById("studentFields").classList.toggle("hidden", role !== "student");
+            document.getElementById("teacherFields").classList.toggle("hidden", role !== "teacher");
+
+            Logger.info("Register", `Registration role selected: ${role}`);
+        }
+
+        // Handle registration
+        async function handleRegister(e) {
+            e.preventDefault();
+
+            const name = document.getElementById("regName").value.trim();
+            const email = document.getElementById("regEmail").value.trim();
+            const password = document.getElementById("regPassword").value;
+            const confirmPassword = document.getElementById("regConfirmPassword").value;
+            const role = document.getElementById("regRole").value;
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showAlert("Passwords do not match!", "error");
+                return;
+            }
+
+            showLoading(true);
+            hideAlert();
+
+            const userData = { name, role };
+
+            if (role === "student") {
+                userData.studentId = document.getElementById("studentId").value.trim();
+                userData.course = document.getElementById("course").value.trim();
+                userData.semester = document.getElementById("semester").value;
+            } else if (role === "teacher") {
+                userData.department = document.getElementById("department").value.trim();
+                userData.subject = document.getElementById("subject").value.trim();
+                userData.qualification = document.getElementById("qualification").value.trim();
+                userData.experience = document.getElementById("experience").value;
+            }
+
+            const result = await Auth.register(email, password, userData);
+
+            showLoading(false);
+
+            if (result.success) {
+                showAlert(result.message, "success");
+                document.getElementById("registerForm").reset();
+            } else {
+                showAlert(result.message, "error");
+            }
+        }
+
+        // UI Helpers
+        function showAlert(message, type) {
+            const alertBox = document.getElementById("alertBox");
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type} show`;
+        }
+
+        function hideAlert() {
+            document.getElementById("alertBox").className = "alert";
+        }
+
+        function showLoading(show) {
+            document.getElementById("loadingOverlay").classList.toggle("show", show);
+        }
+
+        Logger.info("Register", "Registration page loaded");
+    </script>
+</body>
+</html>

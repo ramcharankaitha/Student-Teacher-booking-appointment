@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Student Teacher Booking</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                </div>
+            </div>
+            <h1>Sign in to your account</h1>
+            <p class="subtitle">Student-Teacher Appointment Management System</p>
+
+            <div id="alertBox" class="alert"></div>
+
+            <div class="role-selector">
+                <button class="role-btn active" onclick="selectRole('admin')">Admin</button>
+                <button class="role-btn" onclick="selectRole('teacher')">Teacher</button>
+                <button class="role-btn" onclick="selectRole('student')">Student</button>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <input type="hidden" id="selectedRole" value="admin">
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Login</button>
+            </form>
+
+            <div class="auth-link">
+                <p>Don't have an account? <a href="register.html">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        // Role selection
+        function selectRole(role) {
+            document.getElementById("selectedRole").value = role;
+            document.querySelectorAll(".role-btn").forEach(btn => btn.classList.remove("active"));
+            event.target.classList.add("active");
+            Logger.info("Login", `Role selected: ${role}`);
+        }
+
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const selectedRole = document.getElementById("selectedRole").value;
+
+            showLoading(true);
+            hideAlert();
+
+            const result = await Auth.login(email, password);
+
+            if (result.success) {
+                // Verify role matches
+                if (result.role !== selectedRole) {
+                    showAlert(`You are registered as a ${result.role}, not as ${selectedRole}. Please select the correct role.`, "error");
+                    await Auth.logout();
+                    showLoading(false);
+                    return;
+                }
+
+                Logger.action("Login", `Redirecting ${email} to ${result.role} dashboard`);
+
+                // Redirect based on role
+                switch (result.role) {
+                    case "admin":
+                        window.location.href = "admin-dashboard.html";
+                        break;
+                    case "teacher":
+                        window.location.href = "teacher-dashboard.html";
+                        break;
+                    case "student":
+                        window.location.href = "student-dashboard.html";
+                        break;
+                }
+            } else {
+                showAlert(result.message, "error");
+                showLoading(false);
+            }
+        }
+
+        // UI Helpers
+        function showAlert(message, type) {
+            const alertBox = document.getElementById("alertBox");
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type} show`;
+        }
+
+        function hideAlert() {
+            document.getElementById("alertBox").className = "alert";
+        }
+
+        function showLoading(show) {
+            document.getElementById("loadingOverlay").classList.toggle("show", show);
+        }
+
+        // Check if already logged in
+        window.addEventListener("load", () => {
+            const uid = sessionStorage.getItem("uid");
+            const role = sessionStorage.getItem("role");
+            if (uid && role) {
+                window.location.href = `${role === "admin" ? "admin" : role}-dashboard.html`;
+            }
+            Logger.info("Login", "Login page loaded");
+        });
+    </script>
+</body>
+</html>

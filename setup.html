@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Admin - Student Teacher Booking</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </div>
+            </div>
+            <h1>System Setup</h1>
+            <p class="subtitle">Create the initial administrator account</p>
+
+            <div id="alertBox" class="alert"></div>
+
+            <form id="setupForm" onsubmit="handleSetup(event)">
+                <div class="form-group">
+                    <label for="adminName">Admin Name</label>
+                    <input type="text" id="adminName" placeholder="Enter admin name" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminEmail">Admin Email</label>
+                    <input type="email" id="adminEmail" placeholder="Enter admin email" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Admin Password</label>
+                    <input type="password" id="adminPassword" placeholder="Create password (min 6 chars)" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Create Admin Account</button>
+            </form>
+
+            <div class="auth-link mt-2">
+                <p>Already set up? <a href="index.html">Go to Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/setup-admin.js"></script>
+
+    <script>
+        async function handleSetup(e) {
+            e.preventDefault();
+            const name = document.getElementById("adminName").value.trim();
+            const email = document.getElementById("adminEmail").value.trim();
+            const password = document.getElementById("adminPassword").value;
+
+            document.getElementById("loadingOverlay").classList.add("show");
+
+            try {
+                await AdminSetup.createAdmin(email, password, name);
+                const alertBox = document.getElementById("alertBox");
+                alertBox.textContent = "Admin account created successfully! Redirecting to login...";
+                alertBox.className = "alert alert-success show";
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 2000);
+            } catch (error) {
+                const alertBox = document.getElementById("alertBox");
+                alertBox.textContent = "Error: " + error.message;
+                alertBox.className = "alert alert-error show";
+            }
+
+            document.getElementById("loadingOverlay").classList.remove("show");
+        }
+    </script>
+</body>
+</html>
